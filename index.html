@@ -4,10 +4,17 @@
 <title>WhatsApp · 07/06</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,sans-serif;background:#09090b;color:#a1a1aa;padding-bottom:80px}
+body{font-family:-apple-system,sans-serif;background:#09090b;color:#a1a1aa;padding-bottom:90px}
 .bar{position:sticky;top:0;z-index:10;background:#131317;border-bottom:1px solid #1f1f28;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
 .bar h1{font-size:15px;color:#f4f4f5}
 .bar .stat{font-size:11px;color:#63636e;text-align:right;line-height:1.4}
+.tabs{display:flex;position:sticky;top:46px;z-index:9;background:#131317;border-bottom:1px solid #1f1f28}
+.tab{flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:#63636e;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.2s}
+.tab.active{color:#34d399;border-bottom-color:#34d399}
+.tab.active.p0{color:#818cf8;border-bottom-color:#818cf8}
+.tab .badge{font-size:10px;opacity:.7;margin-left:3px}
+.panel{display:none}
+.panel.active{display:block}
 .card{margin:4px 10px;padding:10px 14px;background:#131317;border:1px solid #1f1f28;border-radius:8px}
 .card .top{display:flex;align-items:center;gap:10px}
 .card .info{flex:1;min-width:0}
@@ -25,166 +32,153 @@ body{font-family:-apple-system,sans-serif;background:#09090b;color:#a1a1aa;paddi
 .card .reason-save{display:none;margin-top:4px;padding:5px 12px;border-radius:4px;background:#6b21a8;color:#fff;border:none;cursor:pointer;font-size:11px}
 .card.done{opacity:.5;border-color:#064e3b}
 .card.skipped{opacity:.5;border-color:#3b0764}
-h2{padding:12px 14px 6px;font-size:16px;font-weight:700;color:#34d399}
 .summary{position:fixed;bottom:0;left:0;right:0;background:#131317;border-top:1px solid #1f1f28;padding:10px 14px;display:flex;gap:8px;z-index:10;justify-content:space-between;align-items:center}
 .summary .nums{font-size:12px;color:#63636e}
 .summary .sync-btn{padding:8px 16px;border-radius:6px;background:#2563eb;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer}
-.summary .sync-btn:active{background:#1d4ed8}
 .toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:100;display:none}
+.section-header{padding:10px 14px 4px;font-size:14px;font-weight:700}
+.section-header.premium{color:#34d399}
+.section-header.p0{color:#818cf8}
 </style></head><body>
 <div class="bar">
   <div><h1>WhatsApp 发送</h1></div>
   <span class="stat" id="stat">共15条<br>待处理</span>
 </div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('premium')">★ 优质线索 <span class="badge">5</span></button>
+  <button class="tab p0" onclick="switchTab('p0')">批零粉丝 <span class="badge">10</span></button>
+</div>
 <div id="toast" class="toast"></div>
-<div id="list"></div>
+<div id="panelPremium" class="panel active">
+  <div class="section-header premium">★ 优质线索 · 5条</div>
+  <div id="listPremium"></div>
+</div>
+<div id="panelP0" class="panel">
+  <div class="section-header p0">批零粉丝 · 10条</div>
+  <div id="listP0"></div>
+</div>
 <div class="summary">
   <span class="nums" id="summary">--</span>
   <button class="sync-btn" onclick="syncAll()">🔄 同步到飞书</button>
 </div>
 
 <script>
-var DATA = [{"rid": "recvowJ00au34V", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+8613262396206", "d": "8613262396206", "m": "Hi! I'm a shoe supplier from China (Putian). Factory-direct sneakers, best prices. Want to see our catalog?", "name": "أحمد شحاته في الصين", "g": "中国 · 优质线索", "note": "提到中国/义乌 — 人在中国的阿拉伯商人（主页显示+8614757860801）"}, {"rid": "recvowJ00afbbD", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+201223661877", "d": "201223661877", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "سنتر المصطفى", "g": "埃及 · 优质线索", "note": "FB用户"}, {"rid": "recvowJ00aWotf", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+201009096989", "d": "201009096989", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "MomentoShoes", "g": "埃及 · 优质线索", "note": "鞋类, 运动鞋"}, {"rid": "recvowJ00aq7nB", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+525514322805", "d": "525514322805", "m": "Hola, soy proveedor de calzado en China. Precio de fábrica, calidad original. ¿Te interesa?", "name": "Buytiti", "g": "墨西哥 · 优质线索", "note": "FB用户"}, {"rid": "recvowJ00aLM3a", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+966508210102", "d": "966508210102", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "ابراهيم الحازمي (skytocan)", "g": "沙特 · 优质线索", "note": "手机号公开在主页"}, {"rid": "recvowHpsWsWQ1", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201222871478", "d": "201222871478", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61578507609154", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWZfaI", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+2039099676", "d": "2039099676", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "100064643367117", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWTz6O", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+9884913490", "d": "9884913490", "m": "Hi! I'm a shoe supplier from China (Putian). Factory-direct sneakers, best prices. Want to see our catalog?", "name": "61580712814415", "g": "伊朗 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWaOXy", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201559056195", "d": "201559056195", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61573867263592", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWyz9Y", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+971567891230", "d": "971567891230", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "100069817140058", "g": "阿联酋 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWzlpr", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+971504501529", "d": "971504501529", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61579586152540", "g": "阿联酋 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWOKOt", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201015628722", "d": "201015628722", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61577653059770", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWOKOt", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201515725756", "d": "201515725756", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61577653059770", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWEp47", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201031323711", "d": "201031323711", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61585418202297", "g": "埃及 · 粉丝联系方式", "note": ""}, {"rid": "recvowHpsWNEG1", "tid": "tblvluUe1adMKrXc", "label": "粉丝联系方式", "n": "+201025007100", "d": "201025007100", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "Almaghawr", "g": "埃及 · 粉丝联系方式", "note": ""}];
+var PREMIUM = [{"rid": "recvowJ00au34V", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+8613262396206", "d": "8613262396206", "m": "Hi! I'm a shoe supplier from China (Putian). Factory-direct sneakers, best prices. Want to see our catalog?", "name": "أحمد شحاته في الصين", "g": "中国", "note": "提到中国/义乌 — 人在中国的阿拉伯商人（主页显示+8614757860801）"}, {"rid": "recvowJ00afbbD", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+201223661877", "d": "201223661877", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "سنتر المصطفى", "g": "埃及", "note": "FB用户"}, {"rid": "recvowJ00aWotf", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+201009096989", "d": "201009096989", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "MomentoShoes", "g": "埃及", "note": "鞋类, 运动鞋"}, {"rid": "recvowJ00aq7nB", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+525514322805", "d": "525514322805", "m": "Hola, soy proveedor de calzado en China. Precio de fábrica, calidad original. ¿Te interesa?", "name": "Buytiti", "g": "墨西哥", "note": "FB用户"}, {"rid": "recvowJ00aLM3a", "tid": "tblOUVcGAskyrsbL", "label": "优质线索", "n": "+966508210102", "d": "966508210102", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "ابراهيم الحازمي (skytocan)", "g": "沙特", "note": "手机号公开在主页"}];
+var FANS = [{"rid": "recvowHpsWsWQ1", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201222871478", "d": "201222871478", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61578507609154", "g": "埃及", "note": ""}, {"rid": "recvowHpsWZfaI", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+2039099676", "d": "2039099676", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "100064643367117", "g": "埃及", "note": ""}, {"rid": "recvowHpsWTz6O", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+9884913490", "d": "9884913490", "m": "Hi! I'm a shoe supplier from China (Putian). Factory-direct sneakers, best prices. Want to see our catalog?", "name": "61580712814415", "g": "伊朗", "note": ""}, {"rid": "recvowHpsWaOXy", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201559056195", "d": "201559056195", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61573867263592", "g": "埃及", "note": ""}, {"rid": "recvowHpsWyz9Y", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+971567891230", "d": "971567891230", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "100069817140058", "g": "阿联酋", "note": ""}, {"rid": "recvowHpsWzlpr", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+971504501529", "d": "971504501529", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61579586152540", "g": "阿联酋", "note": ""}, {"rid": "recvowHpsWOKOt", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201015628722", "d": "201015628722", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61577653059770", "g": "埃及", "note": ""}, {"rid": "recvowHpsWOKOt", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201515725756", "d": "201515725756", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61577653059770", "g": "埃及", "note": ""}, {"rid": "recvowHpsWEp47", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201031323711", "d": "201031323711", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "61585418202297", "g": "埃及", "note": ""}, {"rid": "recvowHpsWNEG1", "tid": "tblvluUe1adMKrXc", "label": "批零粉丝", "n": "+201025007100", "d": "201025007100", "m": "السلام عليكم، أنا مورد أحذية من الصين (بوتيان). لدينا أحذية رياضية أصلية بأسعار المصنع. مهتم؟", "name": "Almaghawr", "g": "埃及", "note": ""}];
 var FEISHU_TOKEN = "t-g104762CYKLAM3C7GUFFNV6TPO5ARMI2FXW66HNE";
 var APP_TOKEN = "XV2tbQN9CahVZVs3DNac2A7hnVg";
-
-// Load local state
 var STATE = JSON.parse(localStorage.getItem("wa_state_v2") || "{}");
-// STATE = { "rid": {"action":"contacted"} or {"action":"skipped","reason":"..."} }
+var currentTab = "premium";
 
 function saveState(){ localStorage.setItem("wa_state_v2", JSON.stringify(STATE)); }
 function toast(msg){ var t=document.getElementById("toast");t.textContent=msg;t.style.display="block";setTimeout(function(){t.style.display="none"},2000); }
 
+function switchTab(tab){
+    currentTab = tab;
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+    document.querySelectorAll(".panel").forEach(function(p){ p.classList.remove("active"); });
+    if(tab==="premium"){ document.querySelector(".tab:nth-child(1)").classList.add("active"); document.getElementById("panelPremium").classList.add("active"); }
+    else{ document.querySelector(".tab:nth-child(2)").classList.add("active"); document.getElementById("panelP0").classList.add("active"); }
+    updateStats();
+}
+
 function updateFeishu(rid, tid, fields, callback){
-    var url = "https://open.feishu.cn/open-apis/bitable/v1/apps/" + APP_TOKEN + "/tables/" + tid + "/records/" + rid;
-    fetch(url, {
-        method: "PUT",
-        headers: {"Content-Type":"application/json","Authorization":"Bearer "+FEISHU_TOKEN},
-        body: JSON.stringify({"fields": fields})
+    fetch("https://open.feishu.cn/open-apis/bitable/v1/apps/"+APP_TOKEN+"/tables/"+tid+"/records/"+rid, {
+        method:"PUT", headers:{"Content-Type":"application/json","Authorization":"Bearer "+FEISHU_TOKEN},
+        body:JSON.stringify({"fields":fields})
     }).then(function(r){ return r.json(); }).then(function(d){
         if(d.code===0){ if(callback) callback(true); }
-        else{ console.log("API error:", d); if(callback) callback(false); }
-    }).catch(function(e){ console.log("Network error:", e); if(callback) callback(false); });
+        else{ if(callback) callback(false); }
+    }).catch(function(){ if(callback) callback(false); });
 }
 
 function markContacted(rid, tid, card){
-    STATE[rid] = {"action":"contacted"};
-    saveState();
+    STATE[rid]={"action":"contacted"}; saveState();
     card.classList.add("done");
-    updateFeishu(rid, tid, {"已联系":"是"}, function(ok){
-        if(!ok) toast("⚠️ 飞书同步失败，请点底部同步按钮");
-        else toast("✅ 已联系");
-    });
+    updateFeishu(rid, tid, {"已联系":"是"}, function(ok){ if(!ok) toast("⚠️ 同步失败"); else toast("✅ 已联系"); });
     updateStats();
 }
 
 function showReason(rid, card){
-    var input = card.querySelector(".reason-input");
-    var saveBtn = card.querySelector(".reason-save");
-    var skipBtn = card.querySelector(".btn-skip");
-    input.style.display = "block";
-    saveBtn.style.display = "inline-block";
-    skipBtn.style.display = "none";
-    input.focus();
+    card.querySelector(".reason-input").style.display="block";
+    card.querySelector(".reason-save").style.display="inline-block";
+    card.querySelector(".btn-skip").style.display="none";
+    card.querySelector(".reason-input").focus();
 }
 
 function saveReason(rid, tid, card){
-    var input = card.querySelector(".reason-input");
-    var reason = input.value.trim();
+    var reason = card.querySelector(".reason-input").value.trim();
     if(!reason){ toast("请填写原因"); return; }
-    
-    STATE[rid] = {"action":"skipped","reason":reason};
-    saveState();
+    STATE[rid]={"action":"skipped","reason":reason}; saveState();
     card.classList.add("skipped");
-    updateFeishu(rid, tid, {"未联系原因":reason}, function(ok){
-        if(!ok) toast("⚠️ 飞书同步失败，请点底部同步按钮");
-        else toast("✅ 已备注");
-    });
+    updateFeishu(rid, tid, {"未联系原因":reason}, function(ok){ if(!ok) toast("⚠️ 同步失败"); else toast("✅ 已备注"); });
     updateStats();
 }
 
 function syncAll(){
-    var pending = [];
-    for(var rid in STATE){
-        var item = DATA.find(function(d){ return d.rid===rid; });
-        if(!item) continue;
-        var fields = {};
-        if(STATE[rid].action==="contacted") fields["已联系"] = "是";
-        else if(STATE[rid].action==="skipped") fields["未联系原因"] = STATE[rid].reason;
-        
-        if(Object.keys(fields).length>0){
-            pending.push({rid:rid, tid:item.tid, fields:fields});
-        }
-    }
+    var pending=[];
+    [PREMIUM,FANS].forEach(function(arr){ arr.forEach(function(d){
+        if(!STATE[d.rid]) return;
+        var fields={};
+        if(STATE[d.rid].action==="contacted") fields["已联系"]="是";
+        else if(STATE[d.rid].action==="skipped") fields["未联系原因"]=STATE[d.rid].reason;
+        if(Object.keys(fields).length>0) pending.push({rid:d.rid,tid:d.tid,fields:fields});
+    }); });
     if(pending.length===0){ toast("没有需要同步的"); return; }
-    toast("正在同步 " + pending.length + " 条...");
-    
-    var done=0, fail=0;
-    pending.forEach(function(p, i){
-        setTimeout(function(){
-            updateFeishu(p.rid, p.tid, p.fields, function(ok){
-                if(ok) done++; else fail++;
-                if(done+fail===pending.length) toast("✅ 同步完成: " + done + "/" + pending.length);
-            });
-        }, i*300);
+    toast("正在同步 "+pending.length+" 条...");
+    var done=0;
+    pending.forEach(function(p,i){ setTimeout(function(){ updateFeishu(p.rid,p.tid,p.fields,function(ok){ done++; if(done===pending.length) toast("✅ 同步完成:"+done); }); },i*300); });
+}
+
+function sendWA(e, digits, msg){ e.preventDefault(); window.open("https://wa.me/"+digits+"?text="+encodeURIComponent(msg), "_blank"); }
+
+function renderList(data, containerId){
+    var html="";
+    data.forEach(function(d){
+        var s=STATE[d.rid], done=s&&s.action==="contacted", skipped=s&&s.action==="skipped";
+        var cls=done?" done":(skipped?" skipped":"");
+        html+='<div class="card'+cls+'" id="card-'+d.rid+'">';
+        html+='<div class="top"><div class="info">';
+        html+='<div class="n">'+d.n+'</div>';
+        html+='<div class="name">'+(d.name||"-")+'</div>';
+        html+='<div class="ctx">'+d.g+'</div></div>';
+        if(!done&&!skipped) html+='<a class="send" href="#" onclick="sendWA(event,\''+d.d+'\',\''+d.m.replace(/'/g,"\\'")+'\')">发送</a>';
+        html+='</div>';
+        if(!done&&!skipped){
+            html+='<div class="actions">';
+            html+='<button class="btn btn-contact" onclick="markContacted(\''+d.rid+'\',\''+d.tid+'\',document.getElementById(\'card-'+d.rid+'\'))">✓ 已联系</button>';
+            html+='<button class="btn btn-skip" onclick="showReason(\''+d.rid+'\',document.getElementById(\'card-'+d.rid+'\'))">✗ 未联系</button>';
+            html+='</div>';
+            html+='<input class="reason-input" placeholder="原因：账号不存在/无回复/不是目标...">';
+            html+='<button class="reason-save" onclick="saveReason(\''+d.rid+'\',\''+d.tid+'\',document.getElementById(\'card-'+d.rid+'\'))">保存备注</button>';
+        }else{
+            html+='<div class="actions" style="font-size:11px;color:#63636e;">';
+            if(done) html+='✅ 已联系';
+            if(skipped) html+='⏭️ '+(s.reason||"已备注");
+            html+='</div>';
+        }
+        html+='</div>';
     });
+    document.getElementById(containerId).innerHTML=html||'<div style="text-align:center;padding:30px;color:#52525b">全部已处理 ✅</div>';
 }
 
 function updateStats(){
-    var contacted=0, skipped=0, pending=0;
-    DATA.forEach(function(d){
-        var s = STATE[d.rid];
-        if(s && s.action==="contacted") contacted++;
-        else if(s && s.action==="skipped") skipped++;
+    var contacted=0,skipped=0,pending=0,total=0;
+    var list = currentTab==="premium"? PREMIUM : FANS;
+    list.forEach(function(d){
+        total++; var s=STATE[d.rid];
+        if(s&&s.action==="contacted") contacted++;
+        else if(s&&s.action==="skipped") skipped++;
         else pending++;
     });
-    document.getElementById("stat").innerHTML = "已联系 " + contacted + "<br>未联系 " + skipped + "<br>待处理 " + pending;
-    document.getElementById("summary").textContent = "已联系:"+contacted+" 未联系:"+skipped+" 待处理:"+pending;
-}
-
-function sendWA(e, digits, msg){
-    e.preventDefault();
-    window.open("https://wa.me/"+digits+"?text="+encodeURIComponent(msg), "_blank");
+    document.getElementById("stat").innerHTML="已联系 "+contacted+"<br>未联系 "+skipped+"<br>待处理 "+pending;
+    document.getElementById("summary").textContent="已联系:"+contacted+" 未联系:"+skipped+" 待处理:"+pending;
 }
 
 function render(){
-    var html = "";
-    DATA.forEach(function(d){
-        var s = STATE[d.rid];
-        var done = s && s.action==="contacted";
-        var skipped = s && s.action==="skipped";
-        var cls = done ? " done" : (skipped ? " skipped" : "");
-        
-        html += '<div class="card'+cls+'" id="card-'+d.rid+'">';
-        html += '<div class="top"><div class="info">';
-        html += '<div class="n">'+d.n+'</div>';
-        html += '<div class="name">'+(d.name||"-")+'</div>';
-        html += '<div class="ctx">'+(d.g||"")+'</div></div>';
-        
-        if(!done && !skipped){
-            html += '<a class="send" href="#" onclick="sendWA(event,\''+d.d+'\',\''+d.m.replace(/'/g,"\\'")+'\')">发送</a>';
-        }
-        html += '</div>';
-        
-        if(!done && !skipped){
-            html += '<div class="actions">';
-            html += '<button class="btn btn-contact" onclick="markContacted(\''+d.rid+'\',\''+d.tid+'\',document.getElementById(\'card-'+d.rid+'\'))">✓ 已联系</button>';
-            html += '<button class="btn btn-skip" onclick="showReason(\''+d.rid+'\',document.getElementById(\'card-'+d.rid+'\'))">✗ 未联系</button>';
-            html += '</div>';
-            html += '<input class="reason-input" placeholder="未联系原因：账号不存在/无回复/不是目标客户...">';
-            html += '<button class="reason-save" onclick="saveReason(\''+d.rid+'\',\''+d.tid+'\',document.getElementById(\'card-'+d.rid+'\'))">保存备注</button>';
-        }else{
-            html += '<div class="actions" style="font-size:11px;color:#63636e;">';
-            if(done) html += '✅ 已联系';
-            if(skipped) html += '⏭️ '+(s.reason||"已备注");
-            html += '</div>';
-        }
-        
-        html += '</div>';
-    });
-    document.getElementById("list").innerHTML = html;
+    renderList(PREMIUM, "listPremium");
+    renderList(FANS, "listP0");
     updateStats();
 }
-
 render();
 </script></body></html>
